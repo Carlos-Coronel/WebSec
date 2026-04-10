@@ -1,0 +1,58 @@
+services:
+  # Damn Vulnerable Web Application (DVWA)
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: ${COMPOSE_PROJECT_NAME}_dvwa
+    restart: unless-stopped
+    ports:
+      - "${DVWA_PORT}:80"
+    networks:
+      - lab_network
+    environment:
+      - DBMS_TYPE=mysql
+    volumes:
+      - dvwa_mysql_data:/var/lib/mysql
+
+  # OWASP Juice Shop
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: ${COMPOSE_PROJECT_NAME}_juice_shop
+    restart: unless-stopped
+    ports:
+      - "${JUICE_SHOP_PORT}:3000"
+    networks:
+      - lab_network
+    # Uso de volumen nombrado para persistencia sin conflictos de archivos internos
+    volumes:
+      - juice_shop_data:/juice-shop/data
+
+  # WebGoat (incluye WebWolf integrado)
+  webgoat:
+    image: webgoat/webgoat
+    container_name: ${COMPOSE_PROJECT_NAME}_webgoat
+    restart: unless-stopped
+    ports:
+      - "${WEBGOAT_PORT}:8080"
+      - "${WEBWOLF_PORT}:9090"
+    networks:
+      - lab_network
+    environment:
+      - WEBWOLF_HOST=webgoat
+      - WEBWOLF_PORT=9090
+    volumes:
+      - webgoat_data:/home/webgoat/.webgoat
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/WebGoat/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  lab_network:
+    name: ${LAB_NETWORK}
+    driver: bridge
+
+volumes:
+  dvwa_mysql_data:
+  juice_shop_data:
+  webgoat_data:
